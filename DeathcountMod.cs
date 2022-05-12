@@ -13,13 +13,13 @@ namespace Deathcount
     [BepInPlugin("kadw.deathcount", "Deathcount", "0.1.0")]
     public class DeathcountMod : BaseUnityPlugin
     {
-        private static MenuLabel[] menuDeathLabels = new MenuLabel[10];
-        public static int[] menuDeaths = new int[10];
+        private static MenuLabel[] menuDeathLabels = new MenuLabel[0];
+        public static int[] menuDeaths = new int[0];
         private static bool isSlugBaseEnabled;
 
         public void OnEnable()
         {
-            // On.Menu.SlugcatSelectMenu.ctor += SlugcatSelectMenu_ctor;
+            On.Menu.SlugcatSelectMenu.ctor += SlugcatSelectMenu_ctor;
             On.Menu.SlugcatSelectMenu.MineForSaveData += SlugcatSelectMenu_MineForSaveData;
             On.Menu.SlugcatSelectMenu.SlugcatPageContinue.ctor += SlugcatPageContinue_ctor;
             On.Menu.SlugcatSelectMenu.SlugcatPageContinue.GrafUpdate += SlugcatPageContinue_GrafUpdate;
@@ -55,16 +55,23 @@ namespace Deathcount
             */
         }
 
+        /*
+         * Initialize menuDeaths and menuDeathLabels with the number of existing slugcats.
+         */
         private static void SlugcatSelectMenu_ctor(On.Menu.SlugcatSelectMenu.orig_ctor orig, SlugcatSelectMenu self, ProcessManager manager)
         {
-            orig(self, manager);
-            Debug.Log("DEATHCOUNT 00: " + self.saveGameData.Length);
-            Debug.Log("DEATHCOUNT 01: " + self.slugcatColorOrder.Length);
-            Debug.Log("DEATHCOUNT 02: " + self.pages.Count);
-            Debug.Log("DEATHCOUNT 03: " + self.slugcatPages.Length);
+            int slugcats = 4 + SlugBase.PlayerManager.GetCustomPlayers().Count; // 3 vanilla slugs + number of custom slugs + 1 (for length?)
+            menuDeathLabels = new MenuLabel[slugcats];
+            menuDeaths = new int[slugcats];
 
-            menuDeathLabels = new MenuLabel[self.pages.Count];
-            menuDeaths = new int[self.pages.Count];
+            orig(self, manager);
+
+            /*
+            Debug.Log("DEATHCOUNT 00: " + self.saveGameData.Length); - number of slugcats
+            Debug.Log("DEATHCOUNT 01: " + self.slugcatColorOrder.Length); - number of slugcats
+            Debug.Log("DEATHCOUNT 02: " + self.pages.Count); - number of slugcats + 1
+            Debug.Log("DEATHCOUNT 03: " + self.slugcatPages.Length); - number of slugcats
+            */
         }
 
         /*
@@ -73,7 +80,6 @@ namespace Deathcount
         private static SlugcatSelectMenu.SaveGameData SlugcatSelectMenu_MineForSaveData(On.Menu.SlugcatSelectMenu.orig_MineForSaveData orig, ProcessManager manager, int slugcat)
         {
             SlugcatSelectMenu.SaveGameData returnData = orig(manager, slugcat);
-            // Debug.Log("Deathcount MFSD " + slugcat + " " + SlugBase.PlayerManager.GetCustomPlayer(slugcat));
 
             if (returnData != null) {
                 if (isSlugBaseEnabled)
@@ -112,7 +118,7 @@ namespace Deathcount
                         }
                         catch
                         {
-                            Debug.Log("Deathcount custom slug: failed to assign death num. Data: " + list2[0].data);
+                            Debug.Log("Deathcount custom: failed to assign death num. Slugcat/Data: " + slugcat + ", " + list2[0].data);
                             DeathcountMod.menuDeaths[slugcat] = -1;
                         }
 
@@ -138,7 +144,7 @@ namespace Deathcount
                         }
                         catch
                         {
-                            Debug.Log("Deathcount vanilla slug: failed to assign death num. Data: " + list2[0].data);
+                            Debug.Log("Deathcount vanilla: failed to assign death num. Slugcat/Data: " + slugcat + ", " + list2[0].data);
                             menuDeaths[slugcat] = -1;
                         }
                     }
@@ -149,7 +155,7 @@ namespace Deathcount
         }
 
         /*
-         * Create deathcount label for each slugcat menu page, and update it with the other lables.
+         * Create deathcount label for each slugcat menu page, and update it with the other labels.
          */
         private static void SlugcatPageContinue_ctor(On.Menu.SlugcatSelectMenu.SlugcatPageContinue.orig_ctor orig, SlugcatSelectMenu.SlugcatPageContinue self, Menu.Menu menu, MenuObject owner, int pageIndex, int slugcatNumber)
         {
