@@ -6,6 +6,7 @@ using Menu;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Reflection;
+using System.IO;
 
 namespace Deathcount
 {
@@ -26,9 +27,12 @@ namespace Deathcount
             On.Menu.SleepAndDeathScreen.GetDataFromGame += SleepAndDeathScreen_GetDataFromGame;
 
             // for slugbase compatibility
-            On.RainWorld.Start += RainWorld_Start; // look for dependencies and initialize hooks
+            On.RainWorld.Start += RainWorld_Start;
         }
 
+        /*
+         * Check SlugBase enabled.
+         */
         private static void RainWorld_Start(On.RainWorld.orig_Start orig, RainWorld rainWorld)
         {
             orig(rainWorld);
@@ -38,19 +42,17 @@ namespace Deathcount
                 if (asm.GetName().Name == "SlugBase")
                 {
                     isSlugBaseEnabled = true;
+                    // Debug.Log("Deathcount: SlugBase found.");
                     break;
                 }
             }
 
+            /*
             if (!isSlugBaseEnabled)
             {
                 Debug.Log("Deathcount: SlugBase not found.");
             }
-            else
-            {
-                Debug.Log("Deathcount: SlugBase found.");
-                SlugBaseComp.OnEnable();
-            }
+            */
         }
 
         private static void SlugcatSelectMenu_ctor(On.Menu.SlugcatSelectMenu.orig_ctor orig, SlugcatSelectMenu self, ProcessManager manager)
@@ -63,30 +65,61 @@ namespace Deathcount
 
             menuDeathLabels = new MenuLabel[self.pages.Count];
             menuDeaths = new int[self.pages.Count];
-
-            //menuDeathLabels = new MenuLabel[self.slugcatColorOrder.Length];
-            //menuDeaths = new int[self.slugcatColorOrder.Length];
-
-            /*
-            if (isSlugBaseEnabled)
-            {
-                Debug.Log(SlugBase.PlayerManager.GetCustomPlayers());
-            }
-            */
         }
 
+        /*
+         * Get the death count for each slugcat, including SlugBase custom slugcats if they exist.
+         */
         private static SlugcatSelectMenu.SaveGameData SlugcatSelectMenu_MineForSaveData(On.Menu.SlugcatSelectMenu.orig_MineForSaveData orig, ProcessManager manager, int slugcat)
         {
             SlugcatSelectMenu.SaveGameData returnData = orig(manager, slugcat);
-            Debug.Log("Deathcount MFSD " + slugcat);
+            // Debug.Log("Deathcount MFSD " + slugcat + " " + SlugBase.PlayerManager.GetCustomPlayer(slugcat));
 
-            if (isSlugBaseEnabled)
-            {
-                Debug.Log("Deathcount MFSD Slugbase Check " + slugcat + " " + SlugBase.PlayerManager.GetCustomPlayer(slugcat));
-            }
+            if (returnData != null) {
+                if (isSlugBaseEnabled)
+                {
+                    SlugBase.SlugBaseCharacter ply = SlugBase.PlayerManager.GetCustomPlayer(slugcat);
+                    if (ply != null)
+                    {
+                        SaveState save = manager.rainWorld.progression.currentSaveState;
+                        if (save != null && save.saveStateNumber == slugcat)
+                        {
+                            menuDeaths[slugcat] = save.deathPersistentSaveData.deaths;
+                            return returnData;
+                        }
 
-			if (returnData != null)
-            {
+                        int slot = manager.rainWorld.options.saveSlot;
+                        string progLinesCustomSlug;
+                        try
+                        {
+                            progLinesCustomSlug = File.ReadAllText(SlugBase.SaveManager.GetSaveFilePath(ply.Name, slot));
+                        }
+                        catch
+                        {
+                            // most likely there is no save file for this slugcat
+                            // Debug.Log("Deathcount GDH save read error, name: " + ply.Name + " slot: " + slot);
+                            return returnData;
+                        }
+
+                        List<SaveStateMiner.Target> list = new List<SaveStateMiner.Target>();
+                        list.Add(new SaveStateMiner.Target(">DEATHS", "<dpB>", "<dpA>", 50));
+                        List<SaveStateMiner.Result> list2 = SaveStateMiner.Mine(manager.rainWorld, progLinesCustomSlug, list);
+
+                        try
+                        {
+                            DeathcountMod.menuDeaths[slugcat] = int.Parse(list2[0].data);
+                            // Debug.Log("DEATHCOUNT ASSIGN: " + slugcat + " " + int.Parse(list2[0].data));
+                        }
+                        catch
+                        {
+                            Debug.Log("Deathcount custom slug: failed to assign death num. Data: " + list2[0].data);
+                            DeathcountMod.menuDeaths[slugcat] = -1;
+                        }
+
+                        return returnData;
+                    }
+                }
+
                 string[] progLines = manager.rainWorld.progression.GetProgLines();
                 for (int i = 0; i < progLines.Length; i++)
                 {
@@ -100,26 +133,24 @@ namespace Deathcount
                         try
                         {
                             menuDeaths[slugcat] = int.Parse(list2[0].data);
-                            //Debug.Log("DEATHCOUNT ASSIGN: " + slugcat + " " + int.Parse(list2[0].data));
+                            // Debug.Log("DEATHCOUNT ASSIGN: " + slugcat + " " + int.Parse(list2[0].data));
+                            break;
                         }
                         catch
                         {
-                            Debug.Log("Deathcount MFSD: failed to assign death num. Data: " + list2[0].data);
+                            Debug.Log("Deathcount vanilla slug: failed to assign death num. Data: " + list2[0].data);
                             menuDeaths[slugcat] = -1;
                         }
                     }
                 }
-
             }
-
-            //for (int i = 0; i < menuDeaths.Length;i++)
-            //{
-            //    Debug.Log("DEATHCOUNT MENUDEATHS: " + i + " " + menuDeaths[i]);
-            //}
 
             return returnData;
         }
 
+        /*
+         * Create deathcount label for each slugcat menu page, and update it with the other lables.
+         */
         private static void SlugcatPageContinue_ctor(On.Menu.SlugcatSelectMenu.SlugcatPageContinue.orig_ctor orig, SlugcatSelectMenu.SlugcatPageContinue self, Menu.Menu menu, MenuObject owner, int pageIndex, int slugcatNumber)
         {
             orig(self, menu, owner, pageIndex, slugcatNumber);
@@ -140,6 +171,9 @@ namespace Deathcount
             menuDeathLabels[self.slugcatNumber].label.color = Menu.Menu.MenuRGB(Menu.Menu.MenuColors.MediumGrey);
         } 
 
+        /*
+         * Add death count to sleep/death screen.
+         */
         private static void SleepAndDeathScreen_GetDataFromGame(On.Menu.SleepAndDeathScreen.orig_GetDataFromGame orig, SleepAndDeathScreen self, KarmaLadderScreen.SleepDeathScreenDataPackage package)
         {
             orig(self, package);
