@@ -10,7 +10,7 @@ using System.IO;
 
 namespace Deathcount
 {
-    [BepInPlugin("kadw.deathcount", "Deathcount", "0.1.0")]
+    [BepInPlugin("kadw.deathcount", "Deathcount", "1.0.0")]
     public class DeathcountMod : BaseUnityPlugin
     {
         private static MenuLabel[] menuDeathLabels = null;
@@ -82,7 +82,7 @@ namespace Deathcount
          */
         private static void MenuCtor_SlugBaseVersion()
         {
-            int slugcats = 4 + SlugBase.PlayerManager.GetCustomPlayers().Count; // 3 vanilla slugs + number of custom slugs + 1 (for length?)
+            int slugcats = 4 + SlugBase.PlayerManager.GetCustomPlayers().Count; // 3 vanilla slugs + number of custom slugs + 1 (for length)
             menuDeathLabels = new MenuLabel[slugcats];
             menuDeaths = new int[slugcats];
         }
