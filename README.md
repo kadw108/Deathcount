@@ -2,7 +2,7 @@
 
 by kadw (kadw#4425)
 
-A small mod for Rain World that displays number of deaths on the sleep/death screen and save file select screen.
+A small mod for Rain World 1.5 that displays number of deaths on the sleep/death screen and save file select screen.
 
 Should work with custom slugcats in SlugBase.
 
