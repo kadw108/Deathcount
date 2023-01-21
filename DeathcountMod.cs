@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace Deathcount
 {
-    [BepInPlugin("kadw.deathcount", "Deathcount", "1.0")]
+    [BepInPlugin("kadw.deathcount", "Deathcount", "1.1")]
     public class DeathcountMod : BaseUnityPlugin
     {
         private static MenuLabel[] menuDeathLabels = null;
@@ -20,8 +20,8 @@ namespace Deathcount
         public void OnEnable()
         {
             On.Menu.SlugcatSelectMenu.SetSlugcatColorOrder += SlugcatSelectMenu_SetSlugcatColorOrder;
-            On.Menu.SlugcatSelectMenu.MineForSaveData += SlugcatSelectMenu_MineForSaveData;
-            On.Menu.SlugcatSelectMenu.SlugcatPageContinue.ctor += SlugcatPageContinue_ctor;
+            On.Menu.SlugcatSelectMenu.ctor += SlugcatSelectMenu_ctor;
+
             On.Menu.SlugcatSelectMenu.SlugcatPageContinue.GrafUpdate += SlugcatPageContinue_GrafUpdate;
 
             On.Menu.SleepAndDeathScreen.GetDataFromGame += SleepAndDeathScreen_GetDataFromGame;
@@ -59,74 +59,70 @@ namespace Deathcount
             orig(self);
 
             // Each slugcat gets own death number + label, corresponding to number of pages in menu
-            // SetSlugcatColorOrder is called before MineForSaveData, so menuDeathLabels and menuDeaths are never null during the MineForSaveData hook
+            // SetSlugcatColorOrder is called within the SlugcatSelectMenu constructor, so menuDeathLabels and menuDeaths are never null during the constructor hook
             int numOfSlugcats = self.slugcatColorOrder.Count;
             menuDeathLabels = new MenuLabel[numOfSlugcats];
             menuDeaths = new int[numOfSlugcats];
         }
 
         /*
-         * Get the death count for each slugcat, including SlugBase custom slugcats if they exist.
+         * Get the death count for each slugcat, and create the menu label.
          */
-        private static SlugcatSelectMenu.SaveGameData SlugcatSelectMenu_MineForSaveData(On.Menu.SlugcatSelectMenu.orig_MineForSaveData orig, ProcessManager manager, SlugcatStats.Name slugcat)
+        private static void SlugcatSelectMenu_ctor(On.Menu.SlugcatSelectMenu.orig_ctor orig, SlugcatSelectMenu self, ProcessManager manager)
         {
-            // Debug.Log("Deathcount Slugcat Select Menu MineForSaveData");
-            SlugcatSelectMenu.SaveGameData returnData = orig(manager, slugcat);
+            orig(self, manager);
 
-            // Debug.Log("slugcat num " + slugcat + (int) slugcat);
-
-            if (returnData != null) {
-
-                string[] progLines = manager.rainWorld.progression.GetProgLinesFromMemory();
-                for (int i = 0; i < progLines.Length; i++)
+            for (int i = 0; i < self.slugcatColorOrder.Count; i++)
+            {
+                // if a save file exists for that slugcat
+                if (SlugcatSelectMenu.MineForSaveData(manager, self.slugcatColorOrder[i]) != null)
                 {
-                    string[] array = Regex.Split(progLines[i], "<progDivB>");
-                    if (array.Length == 2 && array[0] == "SAVE STATE" && BackwardsCompatibilityRemix.ParseSaveNumber(array[1]) == slugcat)
+                    string[] progLines = manager.rainWorld.progression.GetProgLinesFromMemory();
+                    for (int j = 0; i < progLines.Length; j++)
                     {
-                        List<SaveStateMiner.Target> list = new List<SaveStateMiner.Target>();
-                        list.Add(new SaveStateMiner.Target(">DEATHS", "<dpB>", "<dpA>", 50));
-                        List<SaveStateMiner.Result> list2 = SaveStateMiner.Mine(manager.rainWorld, array[1], list);
+                        string[] array = Regex.Split(progLines[j], "<progDivB>");
+                        if (array.Length == 2 && array[0] == "SAVE STATE" && BackwardsCompatibilityRemix.ParseSaveNumber(array[1]) == self.slugcatColorOrder[i])
+                        {
+                            List<SaveStateMiner.Target> list = new List<SaveStateMiner.Target>();
+                            list.Add(new SaveStateMiner.Target(">DEATHS", "<dpB>", "<dpA>", 50));
+                            List<SaveStateMiner.Result> list2 = SaveStateMiner.Mine(manager.rainWorld, array[1], list);
 
-                        try
-                        {
-                            menuDeaths[(int) slugcat] = int.Parse(list2[0].data);
-                            // Debug.Log("DEATHCOUNT ASSIGN: " + slugcat + " " + int.Parse(list2[0].data));
-                            break;
-                        }
-                        catch
-                        {
-                            Debug.Log("Deathcount vanilla: failed to assign death num. Slugcat/Data: " + slugcat + " " + (int) slugcat + ", " + list2[0].data);
-                            menuDeaths[(int) slugcat] = -1;
+                            // try to assign the death number and create the label for the slugcat
+                            try
+                            {
+                                menuDeaths[i] = int.Parse(list2[0].data);
+                                Debug.Log("Deathcount: assign: " + self.slugcatColorOrder[i] + " " + i + ", " + int.Parse(list2[0].data));
+
+                                menuDeathLabels[i] = new MenuLabel(self, self.slugcatPages[i], "Deaths: " + menuDeaths[i], new Vector2(-1000f, self.slugcatPages[i].imagePos.y - 405f), new Vector2(), false);
+                                menuDeathLabels[i].label.alignment = FLabelAlignment.Left;
+                                self.slugcatPages[i].subObjects.Add(menuDeathLabels[i]);
+                                // Debug.Log("Deathcount: page " + i + " created");
+
+                                break;
+                            }
+                            catch
+                            {
+                                Debug.Log("Deathcount: failed to assign death num. Slugcat/Data: " + self.slugcatColorOrder[i] + " " + i + ", " + list2[0].data);
+                            }
                         }
                     }
                 }
             }
-
-            return returnData;
         }
 
         /*
-         * Create deathcount label for each slugcat menu page, and update it with the other labels.
+         * Update graphics for the deathcount label in each slugcat menu page.
          */
-        private static void SlugcatPageContinue_ctor(On.Menu.SlugcatSelectMenu.SlugcatPageContinue.orig_ctor orig, SlugcatSelectMenu.SlugcatPageContinue self, Menu.Menu menu, MenuObject owner, int pageIndex, SlugcatStats.Name slugcatNumber)
-        {
-            orig(self, menu, owner, pageIndex, slugcatNumber);
-
-            // Debug.Log("DEATHCOUNT MOD: " + self.SlugcatPageIndex + " " + self.slugcatNumber + " " + (int) self.slugcatNumber);
-            menuDeathLabels[(int) self.slugcatNumber] = new MenuLabel(menu, self, "Deaths: " + menuDeaths[(int) self.slugcatNumber], new Vector2(-1000f, self.imagePos.y - 405f), new Vector2(), false);
-            menuDeathLabels[(int) self.slugcatNumber].label.alignment = FLabelAlignment.Left;
-            self.subObjects.Add(menuDeathLabels[(int) self.slugcatNumber]);
-        }
         private static void SlugcatPageContinue_GrafUpdate(On.Menu.SlugcatSelectMenu.SlugcatPageContinue.orig_GrafUpdate orig, SlugcatSelectMenu.SlugcatPageContinue self, float timeStacker)
         {
             orig(self, timeStacker);
 
             float num = self.Scroll(timeStacker);
             float alpha = self.UseAlpha(timeStacker);
-            menuDeathLabels[(int) self.slugcatNumber].label.alpha = alpha;
-            menuDeathLabels[(int) self.slugcatNumber].label.x = self.MidXpos + num * self.ScrollMagnitude + 121f;
-            menuDeathLabels[(int)self.slugcatNumber].label.y = self.imagePos.y - 383f;
-            menuDeathLabels[(int) self.slugcatNumber].label.color = Menu.Menu.MenuRGB(Menu.Menu.MenuColors.MediumGrey);
+            menuDeathLabels[self.SlugcatPageIndex].label.alpha = alpha;
+            menuDeathLabels[self.SlugcatPageIndex].label.x = self.MidXpos + num * self.ScrollMagnitude + 121f;
+            menuDeathLabels[self.SlugcatPageIndex].label.y = self.imagePos.y - 383f;
+            menuDeathLabels[self.SlugcatPageIndex].label.color = Menu.Menu.MenuRGB(Menu.Menu.MenuColors.MediumGrey);
         } 
 
         /*
