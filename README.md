@@ -1,6 +1,6 @@
 # Deathcount
 
-by kadw (kadw#4425)
+by KADW (KADW#4425)
 
 Rain World 1.9 edition, Version 1.1
 
