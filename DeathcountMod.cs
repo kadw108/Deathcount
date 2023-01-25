@@ -117,12 +117,24 @@ namespace Deathcount
         {
             orig(self, timeStacker);
 
-            float num = self.Scroll(timeStacker);
-            float alpha = self.UseAlpha(timeStacker);
-            menuDeathLabels[self.SlugcatPageIndex].label.alpha = alpha;
-            menuDeathLabels[self.SlugcatPageIndex].label.x = self.MidXpos + num * self.ScrollMagnitude + 121f;
-            menuDeathLabels[self.SlugcatPageIndex].label.y = self.imagePos.y - 383f;
-            menuDeathLabels[self.SlugcatPageIndex].label.color = Menu.Menu.MenuRGB(Menu.Menu.MenuColors.MediumGrey);
+            if (menuDeathLabels[self.SlugcatPageIndex] != null)
+            {
+                float num = self.Scroll(timeStacker);
+                float alpha = self.UseAlpha(timeStacker);
+                menuDeathLabels[self.SlugcatPageIndex].label.alpha = alpha;
+                menuDeathLabels[self.SlugcatPageIndex].label.x = self.MidXpos + num * self.ScrollMagnitude + 121f;
+                menuDeathLabels[self.SlugcatPageIndex].label.y = self.imagePos.y - 383f;
+                menuDeathLabels[self.SlugcatPageIndex].label.color = Menu.Menu.MenuRGB(Menu.Menu.MenuColors.MediumGrey);
+            }
+            else
+            {
+                Debug.Log("Deathcount: menuDeathLabels[self.SlugcatPageIndex] is null. SlugcatPageIndex: " + self.SlugcatPageIndex);
+
+                if (menuDeathLabels[self.SlugcatPageIndex] != null)
+                {
+                    Debug.Log("Deathcount: menuDeathLabels[self.SlugcatPageIndex]: " + menuDeathLabels[self.SlugcatPageIndex]);
+                }
+            }
         } 
 
         /*
