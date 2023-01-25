@@ -1,7 +1,7 @@
 {
     "id": "kadw.deathcount",
     "name": "Deathcount",
-    "version": "1.1",
+    "version": "1.2",
     "authors": "KADW",
     "description": "Shows each slugcat's number of deaths on the sleep/death screen and save file select screen.",
     "requirements": [],

@@ -10,7 +10,7 @@ using System.Collections.Generic;
 
 namespace Deathcount
 {
-    [BepInPlugin("kadw.deathcount", "Deathcount", "1.1")]
+    [BepInPlugin("kadw.deathcount", "Deathcount", "1.2")]
     public class DeathcountMod : BaseUnityPlugin
     {
         private static MenuLabel[] menuDeathLabels = null;

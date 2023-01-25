@@ -2,7 +2,7 @@
 
 by KADW (KADW#4425)
 
-Rain World 1.9 edition, Version 1.1
+Rain World 1.9 edition, Version 1.2
 
 A small mod for Rain World 1.9 that displays number of deaths on the sleep/death screen and save file select screen.
 
