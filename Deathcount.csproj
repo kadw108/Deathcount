@@ -19,6 +19,9 @@
     <Reference Include="MonoMod.RuntimeDetour">
       <HintPath>..\referencefolder\MonoMod.RuntimeDetour.dll</HintPath>
     </Reference>
+    <Reference Include="SlugBase">
+      <HintPath>SlugBase.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>..\referencefolder\UnityEngine.dll</HintPath>
     </Reference>

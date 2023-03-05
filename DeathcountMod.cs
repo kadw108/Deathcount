@@ -7,15 +7,17 @@ using Menu;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Deathcount
 {
-    [BepInPlugin("kadw.deathcount", "Deathcount", "1.2")]
+    [BepInPlugin("kadw.deathcount", "Deathcount", "1.3")]
     public class DeathcountMod : BaseUnityPlugin
     {
         private static MenuLabel[] menuDeathLabels = null;
         public static int[] menuDeaths = null;
-        // public static bool isSlugBaseEnabled = false; // SlugBase doesn't exist for Remix/Downpour yet, compatability is disabled
+        public static int numOfSlugcats = -1;
+        public static bool isSlugBaseEnabled = false; // SlugBase compatability
 
         public void OnEnable()
         {
@@ -26,29 +28,31 @@ namespace Deathcount
 
             On.Menu.SleepAndDeathScreen.GetDataFromGame += SleepAndDeathScreen_GetDataFromGame;
 
-            // for slugbase compatibility
+            // for SlugBase compatibility
             // On.RainWorld.Start += RainWorld_Start;
+            On.RainWorld.PostModsInit += RainWorld_PostModsInit;
             Debug.Log("Deathcount mod running");
         }
 
         /*
          * Check SlugBase enabled.
          */
-        private static void RainWorld_Start(On.RainWorld.orig_Start orig, RainWorld rainWorld)
+        private static void RainWorld_PostModsInit(On.RainWorld.orig_PostModsInit orig, RainWorld rainWorld)
         {
             orig(rainWorld);
 
-            foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (ModManager.Mod mod in ModManager.ActiveMods)
             {
-                if (asm.GetName().Name == "SlugBase")
+                Debug.Log("AAAA  " + mod.id);
+                if (mod.id == "slime-cubed.slugbase")
                 {
-                    // isSlugBaseEnabled = true;
-                    // Debug.Log("Deathcount: SlugBase found.");
+                    isSlugBaseEnabled = true;
+                    Debug.Log("Deathcount: SlugBase found.");
                     return;
                 }
             }
 
-            // Debug.Log("Deathcount: SlugBase not found.");
+            Debug.Log("Deathcount: SlugBase not found.");
         }
 
         /*
@@ -58,9 +62,28 @@ namespace Deathcount
         {
             orig(self);
 
-            // Each slugcat gets own death number + label, corresponding to number of pages in menu
-            // SetSlugcatColorOrder is called within the SlugcatSelectMenu constructor, so menuDeathLabels and menuDeaths are never null during the constructor hook
-            int numOfSlugcats = self.slugcatColorOrder.Count;
+            if (!isSlugBaseEnabled)
+            {
+                // Each slugcat gets own death number + label, corresponding to number of pages in menu
+                // SetSlugcatColorOrder is called within the SlugcatSelectMenu constructor, so menuDeathLabels and menuDeaths are never null during the constructor hook
+                numOfSlugcats = self.slugcatColorOrder.Count;
+                menuDeathLabels = new MenuLabel[numOfSlugcats];
+                menuDeaths = new int[numOfSlugcats];
+            }
+            else
+            {
+                SlugcatSelectMenu_SetSlugcatColorOrder_SlugBaseVersion(self);
+            }
+        }
+
+        /*
+         * Used in above method when SlugBase exists.
+         * Has to be split into another method or game crashes if SlugBase isn't there.
+         */
+        private static void SlugcatSelectMenu_SetSlugcatColorOrder_SlugBaseVersion(SlugcatSelectMenu self)
+        {
+            numOfSlugcats = self.slugcatColorOrder.Count + SlugBase.SlugBaseCharacter.Registry.Keys.Count();
+                // SlugBase.PlayerManager.GetCustomPlayers().Count(); // 3 or 7 vanilla slugs + number of custom slugs
             menuDeathLabels = new MenuLabel[numOfSlugcats];
             menuDeaths = new int[numOfSlugcats];
         }
@@ -72,11 +95,15 @@ namespace Deathcount
         {
             orig(self, manager);
 
+            Debug.Log("you are now entering hell " + numOfSlugcats);
+
             for (int i = 0; i < self.slugcatColorOrder.Count; i++)
             {
+                Debug.Log("mark 1");
                 // if a save file exists for that slugcat
                 if (SlugcatSelectMenu.MineForSaveData(manager, self.slugcatColorOrder[i]) != null)
                 {
+                    Debug.Log("mark 2");
                     string[] progLines = manager.rainWorld.progression.GetProgLinesFromMemory();
                     for (int j = 0; i < progLines.Length; j++)
                     {
@@ -88,8 +115,10 @@ namespace Deathcount
                             List<SaveStateMiner.Result> list2 = SaveStateMiner.Mine(manager.rainWorld, array[1], list);
 
                             // try to assign the death number and create the label for the slugcat
+                            Debug.Log("mark 3 I am in Hell");
                             try
                             {
+                                Debug.Log("Deathcount: slugcat " + i);
                                 menuDeaths[i] = int.Parse(list2[0].data);
                                 Debug.Log("Deathcount: assign: " + self.slugcatColorOrder[i] + " " + i + ", " + int.Parse(list2[0].data));
 

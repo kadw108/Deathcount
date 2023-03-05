@@ -4,4 +4,4 @@ Commented source code, and mod folder for non-Steam players, available at https:
 
 If you run into errors, you can message KADW#4425 on Discord. Include the consoleLog.txt and possible exceptionLog.txt file in your Rain World folder. Thanks!
 
-Last updated Jan 24, 2023: another error that crashed Story Mode should hopefully be fixed.
+Last updated March 5, 2023: an error that crashed the game with SlugBase enabled should hopefully be fixed.
