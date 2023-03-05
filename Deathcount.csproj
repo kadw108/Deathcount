@@ -32,7 +32,7 @@
   </ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Copy SourceFiles="$(TargetDir)$(TargetName)$(TargetExt)" DestinationFolder="C:\Users\account\Apps\Steam\steamapps\common\Rain World\BepInEx\plugins" />
+		<Copy SourceFiles="$(TargetDir)$(TargetName)$(TargetExt)" DestinationFolder="C:\Users\account\Apps\Steam\steamapps\common\Rain World\RainWorld_Data\StreamingAssets\Deathcount_final\plugins" />
 	</Target>
 
 </Project>

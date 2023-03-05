@@ -5,3 +5,5 @@ Commented source code, and mod folder for non-Steam players, available at https:
 If you run into errors, you can message KADW#4425 on Discord. Include the consoleLog.txt and possible exceptionLog.txt file in your Rain World folder. Thanks!
 
 Last updated March 5, 2023: an error that crashed the game with SlugBase enabled should hopefully be fixed.
+
+Note: the newest update may also prevent the mod from working at all. It worked when I uploaded it, but the version I download doesn't work for some reason? Not sure why? I will try to fix it later. If Deathcount appears to suddenly have broken, this is why.

@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace Deathcount
 {
-    [BepInPlugin("kadw.deathcount", "Deathcount", "1.3")]
+    [BepInPlugin("kadw.deathcount", "Deathcount", "1.3.1")]
     public class DeathcountMod : BaseUnityPlugin
     {
         private static MenuLabel[] menuDeathLabels = null;
@@ -36,6 +36,8 @@ namespace Deathcount
             int numOfSlugcats = self.slugcatColorOrder.Count;
             menuDeathLabels = new MenuLabel[numOfSlugcats];
             menuDeaths = new int[numOfSlugcats];
+
+            Debug.Log("Deathcount: number of slugcats detected: " + numOfSlugcats);
 
             for (int i = 0; i < self.slugcatColorOrder.Count; i++)
             {
